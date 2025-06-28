@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ai 의성 여행 플래너</title>
+    <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+            rel="stylesheet"
+    />
+    <style>
+        :root {
+            --primary-green: #3dbb78;
+            --light-green: #e6f6ef;
+            --text-dark: #2f2f2f;
+            --text-light: #666;
+            --white: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-green);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--white);
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        nav a {
+            text-decoration: none;
+            margin-left: 1.2rem;
+            color: var(--text-light);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--primary-green);
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            min-height: calc(100vh - 100px);
+            background-image: linear-gradient(to bottom right, #ffffff, #f0fff5);
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-title .highlight {
+            color: var(--primary-green);
+            font-size: 50px;
+        }
+
+        .description {
+            font-size: 1rem;
+            max-width: 600px;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+        }
+
+        .start-button {
+            background-color: var(--primary-green);
+            color: var(--white);
+            font-size: 1rem;
+            padding: 0.9rem 1.6rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .start-button:hover {
+            background-color: #2fa66b;
+            transform: scale(1.05);
+        }
+
+        .hero-image {
+            margin-top: 2.5rem;
+            max-width: 700px;
+            width: 100%;
+            border-radius: 1rem;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .description {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">
+        <img src="/jpg/raw111.png" alt="의성이" />
+        <span class="brand">의성이</span>
+    </div>
+    <nav>
+        <th:block th:if="${session.loginUser == null}">
+            <a href="/login">로그인</a>
+            <a href="/register">회원가입</a>
+        </th:block>
+        <th:block th:if="${session.loginUser != null}">
+            <a href="/chatbot">챗봇</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="/logout">로그아웃</a>
+        </th:block>
+    </nav>
+</header>
+
+<main>
+    <h1 class="hero-title">
+        <span class="highlight">의성군 AI</span>
+        <span class="highlight">여행 플래너</span>
+        <span class="highlight">의성이</span>
+    </h1>
+    <p class="description">
+        지역 퀘스트를 수행하고, AI 여행 가이드 의성이와 함께 <br />
+        의성 곳곳을 누비세요. 퀘스트 완료시 의성사랑상품권까지 지급!
+    </p>
+    <a href="/schedule" class="start-button">의성으로 여행하기</a>
+    <img
+            src="/jpg/raw.png"
+            alt="여행 지도"
+            class="hero-image"
+    />
+</main>
+</body>
+</html>

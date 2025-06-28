@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>회원가입</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+            font-family: Arial, sans-serif;
+        }
+        form {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #2c3e50;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input[type='text'],
+        input[type='password'],
+        input[type='tel'] {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #27ae60;
+            color: white;
+            font-size: 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #219150;
+        }
+        .error {
+            color: red;
+            margin-bottom: 16px;
+            min-height: 1.2em;
+        }
+    </style>
+</head>
+<body>
+<form id="signupForm" novalidate>
+    <h2>회원가입</h2>
+
+    <label for="name">이름</label>
+    <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            minlength="2"
+            placeholder="이름을 입력하세요"
+    />
+
+    <label for="phone">전화번호</label>
+    <input
+            type="tel"
+            id="phone"
+            name="phone"
+            required
+            pattern="\d{2,3}-\d{3,4}-\d{4}"
+            placeholder="010-1234-5678"
+    />
+
+    <label for="userid">아이디</label>
+    <input
+            type="text"
+            id="userid"
+            name="userid"
+            required
+            minlength="4"
+            maxlength="20"
+            placeholder="아이디를 입력하세요"
+    />
+
+    <label for="password">비밀번호</label>
+    <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minlength="6"
+            placeholder="비밀번호를 입력하세요"
+    />
+
+    <label for="passwordConfirm">비밀번호 재인증</label>
+    <input
+            type="password"
+            id="passwordConfirm"
+            name="passwordConfirm"
+            required
+            placeholder="비밀번호를 다시 입력하세요"
+    />
+
+    <div class="error" id="errorMsg"></div>
+
+    <button type="button" onclick="RegisterUser()">가입하기</button>
+</form>
+
+<script>
+    function RegisterUser() {
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const userid = document.getElementById('userid').value.trim();
+        const pw = document.getElementById('password').value;
+        const pwConfirm = document.getElementById('passwordConfirm').value;
+        const errorEl = document.getElementById('errorMsg');
+        errorEl.textContent = '';
+
+        if (!name || !phone || !userid || !pw || !pwConfirm) {
+            errorEl.textContent = '모든 항목을 입력해주세요.';
+            return;
+        }
+
+        const phonePattern = /^\d{2,3}-\d{3,4}-\d{4}$/;
+        if (!phonePattern.test(phone)) {
+            errorEl.textContent = '전화번호 형식이 올바르지 않습니다.';
+            return;
+        }
+
+        if (pw !== pwConfirm) {
+            errorEl.textContent = '비밀번호가 일치하지 않습니다.';
+            return;
+        }
+
+        fetch('do_Register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, userid, pw }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error('회원가입 실패: ' + res.status);
+                return res.json();
+            })
+            .then(() => {
+                alert('회원가입이 완료되었습니다!');
+                window.location.href = '/login';
+            })
+            .catch((err) => {
+                console.error('회원가입 오류:', err);
+                errorEl.textContent = '회원가입 중 오류가 발생했습니다.';
+            });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>의성 여행 플래너</title>
+
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script> <!-- 한국어 로케일 추가 -->
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        :root {
+            --primary-green: #3dbb78;
+            --light-green: #e6f6ef;
+            --text-dark: #2f2f2f;
+            --text-light: #666;
+            --white: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.05);
+        }
+        header {
+            background-color: var(--white);
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        nav a {
+            text-decoration: none;
+            margin-left: 1.2rem;
+            color: var(--text-light);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--primary-green);
+        }
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #map {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            filter: blur(3px) brightness(0.8);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #calendar-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 40px 60px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            text-align: center;
+        }
+
+        #calendar-wrapper h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #calendar-wrapper p {
+            font-size: 14px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        #time-setting-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            width: 80%;
+            max-width: 360px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: none;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        .day-time-block {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 15px;
+            background-color: #fcfcfc;
+        }
+
+        .day-time-block h3 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        .day-time-block h3::before {
+            content: '🗓️';
+            margin-right: 8px;
+            font-size: 1em;
+        }
+
+        .time-select {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .time-select label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        select {
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            background-color: white;
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13%205.7L146.2%20202.7%2018.6%2075.1c-6.7-6.7-17.7-6.7-24.4%200-6.7%206.7-6.7%2017.7%200%2024.4l130.3%20129.8c6.7%206.7%2017.7%206.7%2024.4%200l130.3-129.8c6.7-6.7%206.7-17.7%200-24.4-6.8-6.7-17.7-6.7-24.5%200z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+
+        .exit-btn {
+            background: #6c757d;
+            color: white;
+        }
+        .exit-btn:hover {
+            background: #5a6268;
+        }
+
+        #places-sections-wrapper {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            display: none;
+            height: calc(100vh - 150px);
+        }
+
+        #all-places-section {
+            flex: 1;
+            max-width: 48%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        #selected-places-section {
+            flex: 1;
+            max-width: 48%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        @media (max-width: 768px) {
+            #places-sections-wrapper {
+                flex-direction: column;
+                align-items: center;
+                max-width: 90%;
+                gap: 15px;
+                top: 10%;
+                height: auto;
+            }
+            #all-places-section,
+            #selected-places-section {
+                max-width: 100%;
+                max-height: 350px;
+            }
+        }
+
+        .place-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .place-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            cursor: default;
+            position: relative;
+        }
+
+        .place-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .place-image {
+            width: 80px;
+            height: 80px;
+            min-width: 80px;
+            min-height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        .place-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .place-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .place-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.05em;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .place-description {
+            margin: 0;
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        .add-place-btn {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px; /* 버튼 크기 고정 */
+            border-radius: 50%; /* 원형 버튼 */
+            background-color: #007bff;
+            color: white;
+            border: none;
+            font-size: 1.5em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-place-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* 약간 확대 */
+        }
+        .add-place-btn:active {
+            transform: scale(0.95);
+        }
+
+        .selected-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 10px;
+        }
+        .selected-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background-color: #e9f7ef;
+            border-left: 5px solid #28a745;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #218838;
+        }
+
+        .remove-selected-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 0 5px;
+            transition: color 0.2s ease;
+        }
+        .remove-selected-btn:hover {
+            color: #c82333;
+        }
+        .next-btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            font-size: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<header>
+    <div class="logo">
+        <img src="/jpg/raw111.png" alt="MYRO" />
+        <span class="brand">의성이</span>
+    </div>
+    <nav>
+        <th:block th:if="${session.loginUser == null}">
+            <a href="/login">로그인</a>
+            <a href="/register">회원가입</a>
+        </th:block>
+        <th:block th:if="${session.loginUser != null}">
+            <a href="/credit">크레딧</a>
+            <a href="/roulette">룰렛</a>
+            <a href="/logout">로그아웃</a>
+        </th:block>
+    </nav>
+</header>
+
+<div id="calendar-wrapper">
+    <h2>여행 기간이 어떻게 되시나요?</h2>
+    <p>
+        여행 일자는 최대 10일까지 설정 가능합니다.<br />
+        현재 여행 기간(여행지 도착 날짜, 여행지 출발 날짜)으로 입력해 주세요.
+    </p>
+    <div id="date-picker"></div>
+</div>
+
+<div id="time-setting-container"></div>
+
+<div id="places-sections-wrapper">
+    <div id="all-places-section">
+        <h3>관광지 리스트</h3>
+        <div id="place-list" class="place-list"></div>
+    </div>
+
+    <div id="selected-places-section">
+        <h3>선택한 관광지</h3>
+        <ul id="selected-places" class="selected-list"></ul>
+    </div>
+</div>
+
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c998b17c514d1d9ced4507de43d79ea9"></script>
+<script>
+    const map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(36.3511, 128.6976),
+        level: 9,
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const calendarWrapper = document.getElementById('calendar-wrapper');
+        const timeContainer = document.getElementById('time-setting-container');
+        const placesSectionsWrapper = document.getElementById('places-sections-wrapper'); // 새로 추가된 래퍼
+        const placeList = document.getElementById('place-list');
+        const selectedPlaces = document.getElementById('selected-places');
+
+        // Flatpickr 달력 초기화
+        flatpickr('#date-picker', {
+            mode: 'range',
+            inline: true,
+            dateFormat: 'Y-m-d',
+            showMonths: 2,
+            locale: 'ko',
+            onClose: function (selectedDates) {
+                if (selectedDates.length === 2) {
+                    const maxDays = 10;
+                    const diffInMs = selectedDates[1].getTime() - selectedDates[0].getTime();
+                    const diffInDays = diffInMs / (1000 * 60 * 60 * 24) + 1;
+
+                    if (diffInDays > maxDays) {
+                        alert('여행 일자는 최대 10일까지 선택할 수 있습니다.');
+                        this.clear();
+                        return;
+                    }
+
+                    calendarWrapper.style.display = 'none';
+                    generateTimeInputs(selectedDates[0], selectedDates[1]);
+                }
+            },
+        });
+
+        function generateTimeOptions(startHour = 0) {
+            const options = [];
+            for (let h = startHour; h < 24; h++) {
+                const hour = h.toString().padStart(2, '0');
+                options.push(`<option value="${hour}:00">${hour}:00</option>`);
+            }
+            return options.join('');
+        }
+
+        function generateTimeInputs(startDate, endDate) {
+            const dayMs = 1000 * 60 * 60 * 24;
+            const dateCount = Math.floor((endDate - startDate) / dayMs) + 1;
+            timeContainer.innerHTML = '';
+
+            for (let i = 0; i < dateCount; i++) {
+                const currentDate = new Date(startDate.getTime() + i * dayMs);
+                const dateStr = currentDate.toISOString().split('T')[0];
+
+                const dayBlock = document.createElement('div');
+                dayBlock.className = 'day-time-block';
+
+                const title = document.createElement('h3');
+                title.textContent = dateStr;
+
+                const timeSelectDiv = document.createElement('div');
+                timeSelectDiv.className = 'time-select';
+
+                const startSelect = document.createElement('select');
+                startSelect.innerHTML = generateTimeOptions();
+                const startLabel = document.createElement('label');
+                startLabel.textContent = '시작시간: ';
+                startLabel.appendChild(startSelect);
+
+                const endSelect = document.createElement('select');
+                endSelect.innerHTML = generateTimeOptions(1);
+                const endLabel = document.createElement('label');
+                endLabel.textContent = '종료시간: ';
+                endLabel.appendChild(endSelect);
+
+                startSelect.addEventListener('change', () => {
+                    if (!startSelect.value) return;
+                    const startHour = parseInt(startSelect.value.split(':')[0]);
+                    const nextHour = Math.min(startHour + 1, 23);
+                    endSelect.innerHTML = generateTimeOptions(nextHour);
+                });
+
+                timeSelectDiv.appendChild(startLabel);
+                timeSelectDiv.appendChild(endLabel);
+                dayBlock.appendChild(title);
+                dayBlock.appendChild(timeSelectDiv);
+                timeContainer.appendChild(dayBlock);
+            }
+
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'button-group';
+
+            const doneBtn = document.createElement('button');
+            doneBtn.textContent = '시간 설정 완료';
+            doneBtn.onclick = () => {
+                timeContainer.style.display = 'none';
+                placesSectionsWrapper.style.display = 'flex';
+                loadTouristSpots();
+            };
+
+            const exitBtn = document.createElement('button');
+            exitBtn.textContent = '나가기';
+            exitBtn.className = 'exit-btn';
+            exitBtn.onclick = () => window.location.reload();
+
+            buttonGroup.appendChild(exitBtn);
+            buttonGroup.appendChild(doneBtn);
+            timeContainer.appendChild(buttonGroup);
+
+            timeContainer.style.display = 'block';
+            timeContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function loadTouristSpots() {
+            fetch('/getallplace')
+                .then((res) => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then((data) => {
+                    if (!Array.isArray(data)) {
+                        console.error('서버 응답이 배열 형태가 아닙니다:', data);
+                        alert('관광지 데이터를 불러오는데 문제가 발생했습니다: 응답 형식 오류');
+                        return;
+                    }
+                    const touristSpots = data.filter((place) => place.tag === 1);
+                    placeList.innerHTML = '';
+                    selectedPlaces.innerHTML = '';
+
+                    touristSpots.forEach((place) => {
+                        const div = document.createElement('div');
+                        div.className = 'place-item';
+
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = 'place-image';
+                        const img = document.createElement('img');
+                        img.alt = place.name;
+                        img.src = `/static.jpg/${encodeURIComponent(place.name)}.jpg`;
+                        img.onerror = function() {
+                            this.onerror = null;
+                            this.src = `/static.jpg/${encodeURIComponent(place.name)}.png`;
+                            setTimeout(() => { this.src = 'https://placehold.co/80x80/cccccc/ffffff?text=No+Image'; }, 100);
+                        };
+                        imgContainer.appendChild(img);
+                        div.appendChild(imgContainer);
+
+                        const infoContainer = document.createElement('div');
+                        infoContainer.className = 'place-info';
+
+                        const nameElem = document.createElement('h4');
+                        nameElem.textContent = place.name;
+                        infoContainer.appendChild(nameElem);
+
+                        const descElem = document.createElement('p');
+                        descElem.className = 'place-description';
+                        descElem.textContent = place.description || place.addr;
+                        infoContainer.appendChild(descElem);
+                        div.appendChild(infoContainer);
+
+                        const addButton = document.createElement('button');
+                        addButton.className = 'add-place-btn';
+                        addButton.textContent = '+';
+                        div.appendChild(addButton);
+
+                        addButton.onclick = (event) => {
+                            event.stopPropagation();
+
+                            const li = document.createElement('li');
+                            li.textContent = `${place.name} (${place.addr})`;
+                            li.dataset.placeName = place.name;
+
+                            // 'X' 제거 버튼 추가
+                            const removeButton = document.createElement('button');
+                            removeButton.className = 'remove-selected-btn';
+                            removeButton.innerHTML = '&times;';
+                            removeButton.title = '선택 해제';
+                            removeButton.onclick = () => {
+                                li.remove(); //
+                                placeList.appendChild(div);
+                            };
+                            li.appendChild(removeButton);
+
+                            selectedPlaces.appendChild(li);
+                            div.remove();
+                        };
+
+                        placeList.appendChild(div);
+                    });
+                    const existingNextBtn = document.getElementById('next-btn');
+                    if (!existingNextBtn) {
+                        const nextBtn = document.createElement('button');
+                        nextBtn.id = 'next-btn';
+                        nextBtn.textContent = '선택 완료';
+                        nextBtn.className = 'next-btn';
+
+                        nextBtn.onclick = () => {
+                            loadSelectSpots();
+                        };
+
+                        selectedPlaces.parentElement.appendChild(nextBtn);
+                    }
+                })
+                .catch((err) => {
+                    alert('관광지 정보를 불러오지 못했습니다. 서버 상태를 확인해주세요.');
+                    console.error('관광지 정보를 불러오지 못했습니다:', err);
+                });
+        }
+        function loadSelectSpots() {
+            const selectedItems = document.querySelectorAll('#selected-places li');
+            const selectedNames = Array.from(selectedItems).map(li => li.dataset.placeName);
+
+            if (selectedNames.length === 0) {
+                alert('선택한 관광지가 없습니다.');
+                return;
+            }
+
+            fetch('selections', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(selectedNames),
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('HTTP 오류 상태: ' + res.status);
+                    }
+                    return res.json();  // ← 여기서 응답 데이터를 받음 (예: 관광지 상세 정보 리스트)
+                })
+                .then(data => {
+                    // 1. localStorage에 응답 데이터 저장
+                    localStorage.setItem('selectedPlaces', JSON.stringify(data));
+
+                    // 2. 페이지 이동
+                    window.location.href = "/map";
+                })
+                .catch(err => {
+                    console.error('전송 오류:', err);
+                    alert('서버 오류가 발생했습니다.');
+                });
+        }
+
+    });
+</script>
+</body>
+</html>
+
+
+
+

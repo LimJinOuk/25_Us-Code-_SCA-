@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>카카오맵 여러 마커 표시 + 챗봇</title>
+    <meta name="viewport" content="width=1200, initial-scale=1" />
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f6faf8;
+            margin: 0;
+        }
+        .main-content {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+        .panel {
+            width: 50vw;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 40px;
+        }
+        .left-panel #map {
+            width: 85%;
+            height: 90vh;
+            border-radius: 20px;
+            border: 3px solid #3dbb78;
+            background: #fff;
+            box-shadow: 2px 0 24px rgba(0, 0, 0, 0.07);
+        }
+        .right-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chatbot-container {
+            width: 95%;
+            height: 90vh;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chatbot-header {
+            background: #79a838;
+            color: #fff;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .chatbot-header h2 {
+            margin: 0 0 5px;
+            font-size: 1.5em;
+        }
+        .chatbot-header p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .chatbot-messages {
+            flex-grow: 1;
+            padding: 15px;
+            background: #e9ecef;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            max-width: 80%;
+        }
+        .bot-message {
+            align-self: flex-start;
+        }
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+            word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .bot-message .message-content {
+            background: #fff;
+            color: #333;
+        }
+        .user-message .message-content {
+            background: #79a838;
+            color: #fff;
+        }
+        .bot-icon,
+        .user-icon {
+            font-size: 1.5em;
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+        .chatbot-input {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #fff;
+            border-top: 1px solid #dee2e6;
+            gap: 10px;
+        }
+        .chatbot-input input[type='text'] {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 20px;
+            font-size: 1em;
+        }
+        .chatbot-input button {
+            border: none;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            background: #79a838;
+            color: #fff;
+        }
+        .mission-actions {
+            display: flex;
+            margin-top: 6px;
+            gap: 5px;
+        }
+        .mission-btn {
+            border: none;
+            outline: none;
+            padding: 3px 8px;
+            font-size: 1.3em;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #ffe666;
+            margin: 0;
+            transition: background 0.1s;
+        }
+        .mission-btn.accept { background: #b5e07c; }
+        .mission-btn.reject { background: #ff9f9f; }
+        .message-content {
+            background: #ffe666;
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-size: 1.1em;
+            margin-bottom: 3px;
+            max-width: 60vw;
+            word-break: break-all;
+        }
+    </style>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c998b17c514d1d9ced4507de43d79ea9"></script>
+</head>
+<body>
+<div class="main-content">
+    <div class="panel left-panel">
+        <div id="map"></div>
+    </div>
+    <div class="panel right-panel">
+        <div class="chatbot-container">
+            <div class="chatbot-header">
+                <h2>의성 Planner</h2>
+                <p>챗봇 🌱</p>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+                <div class="message bot-message">
+                    <span class="bot-icon">🤖</span>
+                    <div class="message-content">
+                        안녕하세요! 의성 챗봇입니다. 무엇을 도와드릴까요?
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input
+                        type="text"
+                        id="user-input"
+                        placeholder="질문을 입력하거나 사진을 첨부하세요..."
+                />
+                <input
+                        type="file"
+                        id="image-input"
+                        accept="image/*"
+                        style="display: none"
+                />
+                <button id="upload-button" title="사진 첨부">📎</button>
+                <button id="send-button">전송</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // ===== 지도 로직 =====
+    const dataList = JSON.parse(
+        localStorage.getItem('selectedPlaces') || '[]'
+    );
+    if (Array.isArray(dataList) && dataList.length > 0) {
+        const first = dataList[0];
+        const mapContainer = document.getElementById('map');
+        const map = new kakao.maps.Map(mapContainer, {
+            center: new kakao.maps.LatLng(first.latitude, first.longtitude),
+            level: 10,
+        });
+        const markerColors = [
+            '#98dbc6', '#f18d9e', '#003366', '#89cff0', '#ffdab9',
+            '#ff6f61', '#fffacd', '#2e2e2e', '#556b2f', '#654321'
+        ];
+        const positions = [];
+
+        dataList.forEach(({ latitude, longtitude, name }, idx) => {
+            const markerPosition = new kakao.maps.LatLng(latitude, longtitude);
+            positions.push(markerPosition);
+            const color = markerColors[idx % markerColors.length];
+
+            // SVG 마커 이미지
+            const markerImage = new kakao.maps.MarkerImage(
+                `data:image/svg+xml;utf-8,<svg width='20' height='20' xmlns='http://www.w3.org/2000/svg'><circle cx='10' cy='10' r='8' fill='${color}' stroke='white' stroke-width='2'/></svg>`,
+                new kakao.maps.Size(20, 20),
+                { offset: new kakao.maps.Point(10, 10) }
+            );
+
+            new kakao.maps.Marker({
+                position: markerPosition,
+                map,
+                title: name,
+                image: markerImage,
+            });
+            new kakao.maps.CustomOverlay({
+                position: markerPosition,
+                content: `<div style="background:rgba(255,255,255,0.92);border:1px solid #3dbb78;border-radius:8px;padding:3px 10px;font-size:13px;color:#3dbb78;box-shadow:1px 1px 10px rgba(61,187,120,0.08);margin-bottom:8px;white-space:nowrap;text-align:center;">${name}</div>`,
+                yAnchor: 1.2,
+            }).setMap(map);
+        });
+
+        if (positions.length > 1) {
+            new kakao.maps.Polyline({
+                map,
+                path: positions,
+                strokeWeight: 3,
+                strokeColor: '#002fdd',
+                strokeOpacity: 0.8,
+                strokeStyle: 'solid',
+            });
+        }
+    }
+
+    // ===== 챗봇 로직 =====
+    document.addEventListener('DOMContentLoaded', () => {
+        const messagesContainer = document.getElementById('chatbot-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const imageInput = document.getElementById('image-input');
+        const uploadButton = document.getElementById('upload-button');
+
+        uploadButton.addEventListener('click', () => imageInput.click());
+
+        // 일반 메시지 함수
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message', `${sender}-message`);
+            const icon = document.createElement('span');
+            icon.classList.add(`${sender}-icon`);
+            icon.textContent = sender === 'user' ? '👤' : '🤖';
+            const content = document.createElement('div');
+            content.classList.add('message-content');
+            content.textContent = text;
+            if (sender === 'user') {
+                div.append(content, icon);
+            } else {
+                div.append(icon, content);
+            }
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // "미션" 메시지 함수 (체크/엑스 버튼 포함)
+        function addMissionMessage(text) {
+            const div = document.createElement('div');
+            div.classList.add('message', 'bot-message');
+            const icon = document.createElement('span');
+            icon.classList.add('bot-icon');
+            icon.textContent = '🤖';
+
+            // 1. 미션 텍스트
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text.replace(/^✅ 퀘스트 추출 완료!\s*/, '');
+
+            // 2. 버튼 컨테이너
+            const actions = document.createElement('div');
+            actions.className = 'mission-actions';
+
+            // 체크 버튼
+            const btnAccept = document.createElement('button');
+            btnAccept.className = 'mission-btn accept';
+            btnAccept.title = '미션 수락';
+            btnAccept.textContent = '✔';
+            btnAccept.onclick = () => {
+                actions.innerHTML = `
+  <div style="
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:34px;
+  ">
+    <span style="color:#16af41; font-weight:bold; font-size:1.1em;">미션을 수락했습니다!</span>
+  </div>
+`;
+            };
+
+            // 엑스 버튼
+            const btnReject = document.createElement('button');
+            btnReject.className = 'mission-btn reject';
+            btnReject.title = '다시 요청';
+            btnReject.textContent = '❌';
+            btnReject.onclick = async () => {
+                actions.innerHTML = `
+      <div style="
+        width:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        height:34px;
+      ">
+        <span style="color:#f00; font-weight:bold; font-size:1.1em;">새 미션 생성중...</span>
+      </div>
+    `;
+                // "새로운 미션" 요청(임의로 getBotResponse에 "새 미션" 전달)
+                const newMission = await getBotResponse('새 미션');
+                content.textContent = newMission.replace(/^✅ 퀘스트 추출 완료!\s*/, '');
+                actions.innerHTML = '';
+                actions.appendChild(btnAccept);
+                actions.appendChild(btnReject);
+            };
+
+            actions.appendChild(btnAccept);
+            actions.appendChild(btnReject);
+
+            div.appendChild(icon);
+            div.appendChild(content);
+            div.appendChild(actions);
+
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 미션인지 판단 (예시)
+        function isMission(text) {
+            // '퀘스트', '미션' 등 포함 여부로 판별 (원하면 조정)
+            return /퀘스트|미션/.test(text);
+        }
+
+        // 챗봇 응답 얻기
+        async function getBotResponse(msg) {
+            try {
+                const res = await fetch(
+                    `/api/quest/extract?sen=${encodeURIComponent(msg)}`,
+                    {
+                        method: 'POST',
+                        credentials: 'include',
+                    }
+                );
+                const data = await res.json();
+                const entries = Object.entries(data.response)
+                    .map(([loc, quest]) => `📍 ${loc}\n→ ${quest}`)
+                    .join('\n\n');
+                return `✅ 퀘스트 추출 완료!\n\n${entries}`;
+            } catch (err) {
+                console.error('Error:', err);
+                return `❌ 오류 발생: ${err.message}`;
+            }
+        }
+
+        // 챗봇 전송
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text && imageInput.files.length === 0) return;
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                addMessage(`📎 ${file.name}`, 'user');
+            } else {
+                addMessage(text, 'user');
+            }
+            userInput.value = '';
+
+            const loading = document.createElement('div');
+            loading.classList.add('message', 'bot-message', 'loading');
+            loading.innerHTML = `<span class="bot-icon">🤖</span><div class="message-content">답변을 생성 중입니다</div>`;
+            messagesContainer.appendChild(loading);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            let botReply;
+            if (imageInput.files.length > 0) {
+                const fd = new FormData();
+                fd.append('image', imageInput.files[0]);
+                try {
+                    const res = await fetch('/api/quest/verify-quest', {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'include',
+                    });
+                    const data = await res.json();
+                    botReply = data.response;
+                } catch (err) {
+                    console.error(err);
+                    botReply = `❌ 오류 발생: ${err.message}`;
+                }
+                imageInput.value = '';
+            } else {
+                botReply = await getBotResponse(text);
+            }
+
+            messagesContainer.removeChild(loading);
+
+            // 🟡 "미션"이면 버튼 있는 메시지로, 아니면 일반 메시지로
+            if (isMission(botReply)) {
+                addMissionMessage(botReply);
+            } else {
+                addMessage(botReply, 'bot');
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    });
+</script>
+</body>
+</html>

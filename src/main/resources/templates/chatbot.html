@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>의성 Planner 챗봇 🌱</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        :root {
+            --primary-green: #79a838;
+            --light-gray: #f0f2f5;
+            --bg-light: #e9ecef;
+            --white: #fff;
+            --text-dark: #333;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--light-gray);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chatbot-container {
+            width: 95vw;
+            max-width: 1000px;
+            height: 95vh;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chatbot-header {
+            background: var(--primary-green);
+            color: var(--white);
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .chatbot-header h2 {
+            margin: 0 0 5px;
+            font-size: 1.5em;
+        }
+        .chatbot-header p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .chatbot-messages {
+            flex-grow: 1;
+            padding: 15px;
+            background: var(--bg-light);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            max-width: 80%;
+        }
+        .bot-message {
+            align-self: flex-start;
+        }
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+            word-break: break-word;
+            box-shadow: 0 1px 2px var(--shadow);
+        }
+        .bot-message .message-content {
+            background: var(--white);
+            color: var(--text-dark);
+        }
+        .user-message .message-content {
+            background: var(--primary-green);
+            color: var(--white);
+        }
+        .bot-icon,
+        .user-icon {
+            font-size: 1.5em;
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+        .chatbot-input {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--white);
+            border-top: 1px solid #dee2e6;
+            gap: 10px;
+        }
+        .chatbot-input input[type='text'] {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 20px;
+            font-size: 1em;
+            transition: border 0.2s;
+        }
+        .chatbot-input button {
+            border: none;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            background: var(--primary-green);
+            color: var(--white);
+            transition: background 0.2s;
+        }
+        #upload-button {
+            background: #ced4da;
+            color: var(--text-dark);
+        }
+        #upload-button:hover {
+            background: #adb5bd;
+        }
+        .message.bot-message.loading .message-content::after {
+            content: '...';
+            display: inline-block;
+            animation: blink 1s infinite steps(1);
+            margin-left: 5px;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        .dragover {
+            border: 2px dashed var(--primary-green) !important;
+        }
+    </style>
+</head>
+<body>
+<div class="chatbot-container">
+    <div class="chatbot-header">
+        <h2>의성 Planner</h2>
+        <p>챗봇 🌱</p>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages">
+        <div class="message bot-message">
+            <span class="bot-icon">🤖</span>
+            <div class="message-content">
+                안녕하세요! 의성 챗봇입니다. 무엇을 도와드릴까요?
+            </div>
+        </div>
+    </div>
+    <div class="chatbot-input">
+        <input
+                type="text"
+                id="user-input"
+                placeholder="질문을 입력하거나 사진을 첨부하세요..."
+        />
+        <input
+                type="file"
+                id="image-input"
+                accept="image/*"
+                style="display: none"
+        />
+        <button id="upload-button" title="사진 첨부">📎</button>
+        <button id="send-button">전송</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const messagesContainer = document.getElementById('chatbot-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const imageInput = document.getElementById('image-input');
+        const uploadButton = document.getElementById('upload-button');
+
+        userInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            userInput.classList.add('dragover');
+        });
+        userInput.addEventListener('dragleave', () =>
+            userInput.classList.remove('dragover')
+        );
+        userInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            userInput.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files[0]?.type.startsWith('image/')) {
+                imageInput.files = files;
+                sendMessage();
+            } else alert('이미지 파일만 전송 가능합니다!');
+        });
+
+        uploadButton.addEventListener('click', () => imageInput.click());
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message', `${sender}-message`);
+            const icon = document.createElement('span');
+            icon.classList.add(`${sender}-icon`);
+            icon.textContent = sender === 'user' ? '👤' : '🤖';
+            const content = document.createElement('div');
+            content.classList.add('message-content');
+            content.textContent = text;
+            if (sender === 'user') {
+                div.append(content, icon);
+            } else {
+                div.append(icon, content);
+            }
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function getBotResponse(msg) {
+            try {
+                const res = await fetch(
+                    `/api/quest/extract?sen=${encodeURIComponent(msg)}`,
+                    {
+                        method: 'POST',
+                        credentials: 'include',
+                    }
+                );
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || '서버 오류');
+                }
+
+                const data = await res.json();
+                const entries = Object.entries(data.response)
+                    .map(([loc, quest]) => `📍 ${loc}\n→ ${quest}`)
+                    .join('\n\n');
+
+                return `✅ 퀘스트 추출 완료!\n\n${entries}`;
+            } catch (err) {
+                console.error('Error:', err);
+                return `❌ 오류 발생: ${err.message}`;
+            }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text && imageInput.files.length === 0) return;
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                addMessage(`📎 ${file.name}`, 'user');
+            } else {
+                addMessage(text, 'user');
+            }
+            userInput.value = '';
+
+            const loading = document.createElement('div');
+            loading.classList.add('message', 'bot-message', 'loading');
+            loading.innerHTML = `<span class="bot-icon">🤖</span><div class="message-content">답변을 생성 중입니다</div>`;
+            messagesContainer.appendChild(loading);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            let botReply;
+            if (imageInput.files.length > 0) {
+                const fd = new FormData();
+                fd.append('image', imageInput.files[0]);
+                try {
+                    const res = await fetch('/api/quest/verify-quest', {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'include',
+                    });
+                    const data = await res.json();
+                    botReply = data.response;
+                } catch (err) {
+                    console.error(err);
+                    botReply = `❌ 오류 발생: ${err.message}`;
+                }
+                imageInput.value = '';
+            } else {
+                botReply = await getBotResponse(text);
+            }
+
+            messagesContainer.removeChild(loading);
+            addMessage(botReply, 'bot');
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    });
+</script>
+</body>
+</html>

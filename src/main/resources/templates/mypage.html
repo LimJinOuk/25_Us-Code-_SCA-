@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        :root {
+            --primary-green: #3dbb78;
+            --light-green: #e6f6ef;
+            --text-dark: #2f2f2f;
+            --text-light: #666;
+            --white: #fff;
+            --shadow: rgba(0, 0, 0, 0.05);
+        }
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--light-green);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: var(--white);
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+        nav a {
+            margin-left: 1.2rem;
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover {
+            color: var(--primary-green);
+        }
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            width: 90vw;
+            height: 70vh;
+            gap: 20px;
+        }
+        .left-panel {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .left-panel h2 {
+            margin: 0 0 16px;
+            font-size: 1.6rem;
+            text-align: center;
+        }
+        .quest-preview {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .quest-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            transition: transform 0.2s;
+        }
+        .quest-preview img:hover {
+            transform: scale(1.05);
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+        .box h3 {
+            margin: 0 0 16px;
+            font-size: 1.6rem;
+            text-align: center;
+        }
+        .credit-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+        .credit-buttons button {
+            padding: 14px 24px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary-green);
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .credit-buttons button:hover {
+            background: #2cae66;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            text-align: center;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .modal-content button {
+            margin: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary-green);
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .modal-content button:hover {
+            background: #2cae66;
+        }
+        #rouletteCanvas {
+            border: 2px solid #333;
+            border-radius: 50%;
+            margin: 0 auto;
+        }
+        #spinBtn {
+            margin-top: 20px;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background: #28a745;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #spinBtn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">
+        <img src="/jpg/raw111.png" alt="의성이" /><span class="brand"
+    >의성이</span
+    >
+    </div>
+    <nav>
+        <th:block th:if="${session.loginUser == null}"
+        ><a href="/login">로그인</a><a href="/register">회원가입</a></th:block
+        >
+        <th:block th:if="${session.loginUser != null}"
+        ><a href="/credit">크레딧</a><a href="/roulette">룰렛</a
+        ><a href="/logout">로그아웃</a></th:block
+        >
+    </nav>
+</header>
+<main>
+    <div class="container">
+        <div class="left-panel">
+            <h2>퀘스트 이력</h2>
+            <div class="quest-preview" id="questPreview"></div>
+        </div>
+        <div class="right-panel">
+            <div class="box user-info" id="userInfoBox">
+                <h3>내 정보</h3>
+                <div id="userInfoContent">
+                </div>
+            </div>
+            <div class="box credit-box">
+                <h3>행운 마늘 크레딧</h3>
+                <p style="text-align: center; font-size: 1.2rem">
+                    현재 보유 크레딧:
+                    <span
+                            id="currentCredit"
+                            style="font-size: 2rem; font-weight: bold; color: #79a838"
+                    >
+                0
+              </span>
+                    마늘
+                </p>
+
+                <div class="credit-buttons">
+                    <button onclick="openModal('rouletteModal')">
+                        행운 마늘 뽑기
+                    </button>
+                    <button onclick="openModal('exchangeModal')">환전하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<div class="modal" id="photoModal">
+    <div class="modal-content" id="photoModalContent"></div>
+</div>
+<div class="modal" id="exchangeModal">
+    <div class="modal-content">
+        <h3>환전하기</h3>
+        <p>현재 보유 크레딧: <span id="currentCredit2">0</span> 마늘</p>
+        <label>차감할 마늘 수량 (최소 5000):</label>
+        <input
+                id="exchangeAmount"
+                type="number"
+                min="5000"
+                placeholder="5000 이상 입력"
+        />
+        <button id="confirmExchange">확인</button>
+        <button onclick="closeModal('exchangeModal')">닫기</button>
+    </div>
+</div>
+<div class="modal" id="rouletteModal">
+    <div class="modal-content">
+        <h3>행운 마늘 뽑기</h3>
+        <p>남은 기회: <span id="spinCount">5</span> 회</p>
+
+        <button
+                id="viewHistoryBtn"
+                style="
+            background: none;
+            border: none;
+            color: #79a838;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 12px;
+          "
+        >
+            조회하기
+        </button>
+
+        <div id="historyContainer" style="display: none">
+            <h4>지난 당첨 기록</h4>
+            <ul id="spinHistory"></ul>
+        </div>
+
+        <canvas id="rouletteCanvas" width="300" height="300"></canvas>
+        <button id="spinBtn">돌리기</button>
+        <button onclick="closeModal('rouletteModal')">닫기</button>
+    </div>
+</div>
+<script>
+    // 유저 ID는 실제 상황에 맞게 할당(세션, 전역 변수, 템플릿 등으로 전달)
+
+    // 룰렛 결과 기록용
+    const spinHistory = [];
+
+    // 샘플 이미지 미리보기
+    const sampleImages = [
+        '/img/photo1.jpg',
+        '/img/photo2.jpg',
+        '/img/photo3.jpg',
+    ];
+    const preview = document.getElementById('questPreview');
+    sampleImages.forEach((src) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.onclick = () => openPhotoModal(sampleImages);
+        preview.appendChild(img);
+    });
+
+    function openPhotoModal(imgs) {
+        const m = document.getElementById('photoModal'),
+            c = document.getElementById('photoModalContent');
+        c.innerHTML = imgs
+            .map(
+                (s) =>
+                    `<img src="${s}" style="width:100%;margin-bottom:10px;border-radius:4px;"/>`
+            )
+            .join('');
+        m.classList.add('show');
+    }
+    function openModal(id) {
+        const m = document.getElementById(id);
+        m.classList.add('show');
+        if (id === 'exchangeModal') loadCredit();
+        if (id === 'rouletteModal') drawWheel();
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+    }
+    document.querySelectorAll('.modal').forEach((m) =>
+        m.addEventListener('click', (e) => {
+            if (e.target === m) closeModal(m.id);
+        })
+    );
+
+    // ---------- 환전/크레딧 기능 ----------
+    let userCredit = 0;
+    function loadCredit() {
+        fetch("/credit")
+            .then((res) => res.json())
+            .then(({ credit }) => {
+                document.getElementById('currentCredit').textContent = credit;
+                document.getElementById('currentCredit2').textContent = credit;
+                userCredit = credit;
+            })
+            .catch(console.error);
+    }
+    document
+        .getElementById('confirmExchange')
+        .addEventListener('click', () => {
+            const amt = parseInt(document.getElementById('exchangeAmount').value);
+            if (isNaN(amt) || amt < 5000) {
+                alert('최소 5000 이상');
+                return;
+            }
+            if (amt > userCredit) {
+                alert('크레딧 부족');
+                return;
+            }
+            fetch('/credit/subtract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amt }),
+            })
+                .then((res) => res.json())
+                .then(() => {
+                    alert(`${amt} 마늘 차감 완료`);
+                    closeModal('exchangeModal');
+                    loadCredit();
+                })
+                .catch((err) => {
+                    console.error(err);
+                    alert('환전 오류');
+                });
+        });
+
+    // ---------- 룰렛/추첨 기능 ----------
+    const prizes = [
+        '10000 마늘',
+        '5000 마늘',
+        '의성 마늘 1박스',
+        '2000 마늘',
+        '1000 마늘',
+        '500 마늘',
+    ];
+    const colors = [
+        '#FFEB3B',
+        '#FFC107',
+        '#FF9800',
+        '#FF5722',
+        '#E91E63',
+        '#9C27B0',
+    ];
+
+    // canvas 요소와 context
+    const canvas = document.getElementById('rouletteCanvas'),
+        ctx = canvas ? canvas.getContext('2d') : null;
+    const outsideRadius = 140,
+        textRadius = 100,
+        centerX = canvas ? canvas.width / 2 : 0,
+        centerY = canvas ? canvas.height / 2 : 0;
+    let startAngle = 0;
+    let spinCount = 5;
+
+    function drawWheel() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const arc = (2 * Math.PI) / prizes.length;
+        prizes.forEach((p, i) => {
+            const ang = startAngle + i * arc;
+            ctx.fillStyle = colors[i];
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, outsideRadius, ang, ang + arc);
+            ctx.fill();
+            ctx.save();
+            ctx.translate(
+                centerX + Math.cos(ang + arc / 2) * textRadius,
+                centerY + Math.sin(ang + arc / 2) * textRadius
+            );
+            ctx.rotate(ang + arc / 2 + Math.PI / 2);
+            ctx.fillStyle = '#000';
+            ctx.font = '16px sans-serif';
+            ctx.fillText(p, -ctx.measureText(p).width / 2, 0);
+            ctx.restore();
+        });
+    }
+
+    if (document.getElementById('spinBtn')) {
+        document.getElementById('spinBtn').addEventListener('click', () => {
+            if (spinCount <= 0) {
+                alert('더 이상 돌릴 수 없습니다.');
+                return;
+            }
+            spinCount--;
+            if (document.getElementById('spinCount'))
+                document.getElementById('spinCount').textContent = spinCount;
+            let t = 0,
+                a0 = Math.random() * 10 + 10,
+                tt = Math.random() * 3000 + 4000;
+            function rot() {
+                t += 30;
+                if (t >= tt) return stop();
+                const sa = a0 - easeOut(t, 0, a0, tt);
+                startAngle += (sa * Math.PI) / 180;
+                drawWheel();
+                requestAnimationFrame(rot);
+            }
+            rot();
+        });
+    }
+
+    if (document.getElementById('viewHistoryBtn')) {
+        document
+            .getElementById('viewHistoryBtn')
+            .addEventListener('click', () => {
+                const historyEl = document.getElementById('historyContainer');
+                historyEl.style.display =
+                    historyEl.style.display === 'none' ? 'block' : 'none';
+            });
+    }
+
+    function updateHistoryUI() {
+        const ul = document.getElementById('spinHistory');
+        if (!ul) return;
+        ul.innerHTML = spinHistory.map((item) => `<li>${item}</li>`).join('');
+    }
+
+    function stop() {
+        const deg = ((startAngle * 180) / Math.PI + 90) % 360,
+            idx = Math.floor((360 - deg) / (360 / prizes.length)),
+            pr = prizes[idx];
+        alert(`🎉 당첨: ${pr}`);
+        spinHistory.unshift(pr);
+        updateHistoryUI();
+        if (pr.endsWith('마늘')) {
+            const amt = parseInt(pr);
+            if (amt) {
+                fetch('/credit/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amt }),
+                })
+                    .then((res) => res.json())
+                    .then(() => {
+                        alert(`${amt} 마늘 추가 완료`);
+                        loadCredit();
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        alert('추가 오류');
+                    });
+            }
+        }
+    }
+    function easeOut(t, b, c, d) {
+        return c * ((t = t / d - 1) * t * t + 1) + b;
+    }
+
+    // ---------- 회원 정보 조회 ----------
+    function loadUserInfo() {
+        fetch('/api/userinfo') // 실제 API 경로 명확히 지정!
+            .then((res) => res.json())
+            .then((data) => {
+                const { name, userid, phone } = data;
+                document.getElementById('userInfoContent').innerHTML = `
+                    <p>이름: ${name}</p>
+                    <p>아이디: ${userid}</p>
+                    <p>전화번호: ${phone}</p>
+                `;
+            })
+            .catch((err) => {
+                console.error(err);
+                document.getElementById('userInfoContent').innerHTML =
+                    '<p>회원 정보를 불러올 수 없습니다.</p>';
+            });
+    }
+
+    // ---------- 최초 실행 ----------
+    window.addEventListener('DOMContentLoaded', () => {
+        loadCredit();
+        loadUserInfo();
+        drawWheel();
+    });
+</script>
+
+</body>
+</html>
