@@ -24,7 +24,7 @@ import java.util.*;
 @Service
 public class extractAIService {
 
-    private static final String PROJECT_ID = "codeus2025-01";
+    private static final String PROJECT_ID = "natural-nimbus-464400-b7";
     private static final String LOCATION = "us-central1";
     private static final String MODEL_ID = "gemini-2.5-flash";
 
@@ -53,7 +53,7 @@ public class extractAIService {
 
     public Map<String, String> extractLocateAndSave(String sentence, int userId) throws Exception {
         GoogleCredentials credentials = GoogleCredentials
-                .fromStream(new FileInputStream("src/main/resources/codeus2025-01-d82f7d53c599.json"))
+                .fromStream(new FileInputStream("src/main/resources/natural-nimbus-464400-b7-979528a74dcc.json"))
                 .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
 
         HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(credentials);

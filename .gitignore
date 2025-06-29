@@ -3,7 +3,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
+natural-nimbus-464400-b7-979528a74dcc.json
 *.properties
 codeus2025-01-d82f7d53c599.json
 
