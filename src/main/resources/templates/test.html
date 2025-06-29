@@ -1,54 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <meta charset="utf-8">
-    <title>불광역 카카오맵</title>
-    <style>
-        #map {
-            width: 100%;
-            height: 500px;
-        }
-    </style>
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c998b17c514d1d9ced4507de43d79ea9"></script>
+    <meta charset="UTF-8" />
+    <title>크레딧 환전 QR 생성기</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
-<h1>불광역 지도</h1>
-<div id="map"></div>
+<h2>크레딧 환전 QR 코드 생성기</h2>
+<label>유저 ID: <input type="number" id="userId" value="7" /></label><br/>
+<label>크레딧: <input type="number" id="credit" value="100" /></label><br/>
+<button onclick="generateQR()">QR 생성</button>
+<br/><br/>
+<canvas id="qrcode"></canvas>
 
 <script>
-    // 지도를 표시할 div와 지도의 옵션을 설정합니다.
-    var container = document.getElementById('map');
-    var options = {
-        center: new kakao.maps.LatLng(37.611105, 126.932975), // 불광역의 위도, 경도
-        level: 3 // 지도의 확대 레벨
-    };
+    function generateQR() {
+        const userId = document.getElementById('userId').value;
+        const credit = document.getElementById('credit').value;
+        const timestamp = Date.now();
 
-    // 지도를 생성합니다.
-    var map = new kakao.maps.Map(container, options);
+        // 간단한 Base64 인코딩으로 토큰 생성
+        const raw = `${userId}-${credit}-${timestamp}`;
+        const token = btoa(raw); // 보안이 중요하면 JWT 또는 서버측 서명 필요
 
-    // 마커를 생성합니다. 불광역 위치에 마커를 찍습니다.
-    var markerPosition  = new kakao.maps.LatLng(37.611105, 126.932975);
-    var marker = new kakao.maps.Marker({
-        position: markerPosition
-    });
+        // 이 URL로 서버에서 검증 및 환전 처리
+        const qrContent = `https://yourdomain.com/redeem?token=${token}`;
 
-    // 마커를 지도 위에 표시합니다.
-    marker.setMap(map);
-
-    // 인포윈도우(정보창)를 생성합니다.
-    var infowindow = new kakao.maps.InfoWindow({
-        content: '<div style="padding:5px;text-align:center;font-size:12px;">불광역</div>' // 표시될 내용
-    });
-
-    // 마커에 마우스를 올리면 인포윈도우가 표시되도록 이벤트 리스너를 등록합니다.
-    kakao.maps.event.addListener(marker, 'mouseover', function() {
-        infowindow.open(map, marker);
-    });
-
-    // 마커에서 마우스를 내리면 인포윈도우가 닫히도록 이벤트 리스너를 등록합니다.
-    kakao.maps.event.addListener(marker, 'mouseout', function() {
-        infowindow.close();
-    });
+        const canvas = document.getElementById('qrcode');
+        QRCode.toCanvas(canvas, qrContent, function (error) {
+            if (error) console.error(error);
+            else console.log('QR 코드 생성 완료:', qrContent);
+        });
+    }
 </script>
 </body>
 </html>

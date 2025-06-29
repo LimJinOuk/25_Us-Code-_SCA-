@@ -20,7 +20,7 @@ public class GeminiService {
 
     private static final String PROJECT_ID = "codeus2025-01";
     private static final String LOCATION = "us-central1";
-    private static final String MODEL_ID = "gemini-2.5-flash"; // ✅ 수정된 모델 ID
+    private static final String MODEL_ID = "gemini-2.5-flash";
     private static final String ENDPOINT = String.format(
             "https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
             LOCATION, PROJECT_ID, LOCATION, MODEL_ID
@@ -102,7 +102,7 @@ public class GeminiService {
             rawResponse = rawResponse.substring(1, rawResponse.length() - 1);
         }
 
-        // 🔍 핵심 처리: 문자열 True/False 대응
+        //핵심 처리: 문자열 True/False 대응
         String normalized = rawResponse.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
         if (normalized.contains("true")) {
             return "정말 잘 하셨네요! 정답이에요!";

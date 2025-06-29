@@ -10,10 +10,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class userdto {
     private int id;
-    private String name; //사용자 이름
-    private String pw; //비번
-    private String phone; //전화번호
-    private String userid; //사용자 아이디
+    private String name;
+    private String pw;
+    private String phone;
+    private String userid;
     private int credit;
 
     public static userdto touserdto(userentity uentity)

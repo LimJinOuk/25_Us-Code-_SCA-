@@ -46,4 +46,7 @@ public class HController {
     public String test() {
         return "/test.html";
     }
+
+    @GetMapping("/qr")
+    public String qr() {return "qrtest";}
 }

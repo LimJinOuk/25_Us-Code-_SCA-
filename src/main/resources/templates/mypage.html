@@ -277,9 +277,9 @@
 </div>
 <div class="modal" id="exchangeModal">
     <div class="modal-content">
-        <h3>환전하기</h3>
+        <h3>의성 사랑 상품권 환전</h3>
         <p>현재 보유 크레딧: <span id="currentCredit2">0</span> 마늘</p>
-        <label>차감할 마늘 수량 (최소 5000):</label>
+        <label>차감할 마늘 수량(5000🧄 or 10000🧄):</label>
         <input
                 id="exchangeAmount"
                 type="number"
@@ -377,18 +377,30 @@
             })
             .catch(console.error);
     }
-    document
-        .getElementById('confirmExchange')
-        .addEventListener('click', () => {
-            const amt = parseInt(document.getElementById('exchangeAmount').value);
-            if (isNaN(amt) || amt < 5000) {
-                alert('최소 5000 이상');
-                return;
-            }
-            if (amt > userCredit) {
-                alert('크레딧 부족');
-                return;
-            }
+    document.getElementById('confirmExchange').addEventListener('click', () => {
+        const amt = parseInt(document.getElementById('exchangeAmount').value);
+        if (isNaN(amt) || (amt !== 5000 && amt !== 10000)) {
+            alert('5000 또는 10000만 입력 가능합니다.');
+            return;
+        }
+        if (amt > userCredit) {
+            alert('크레딧 부족');
+            return;
+        }
+
+        // 금액에 따라 이미지 경로 설정
+        const imageUrl = amt === 5000
+            ? '/img/gift_5000.png'
+            : '/img/gift_10000.png';
+
+        // 이미지 보여줄 모달 생성
+        const modal = document.getElementById('photoModal');
+        const content = document.getElementById('photoModalContent');
+        content.innerHTML = `<img src="${imageUrl}" style="max-width: 100%; border-radius: 12px;" />`;
+        modal.classList.add('show');
+
+        // 3초 후에 실제 크레딧 차감 처리
+        setTimeout(() => {
             fetch('/credit/subtract', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -396,24 +408,26 @@
             })
                 .then((res) => res.json())
                 .then(() => {
-                    alert(`${amt} 마늘 차감 완료`);
-                    closeModal('exchangeModal');
-                    loadCredit();
+                    alert(`${amt} 🧄마늘 차감 완료`);
+                    modal.classList.remove('show'); // 사진 모달 닫기
+                    closeModal('exchangeModal');     // 환전 모달 닫기
+                    loadCredit();                    // 크레딧 갱신
                 })
                 .catch((err) => {
                     console.error(err);
                     alert('환전 오류');
+                    modal.classList.remove('show');
                 });
-        });
-
+        }, 3000); // 3초 후 실행
+    });
     // ---------- 룰렛/추첨 기능 ----------
     const prizes = [
         '10000 마늘',
         '5000 마늘',
-        '의성 마늘 1박스',
-        '2000 마늘',
-        '1000 마늘',
-        '500 마늘',
+        '🧄의성마늘 1박스',
+        '💔꽝!',
+        '🧀의성 치즈',
+        '💔꽝!',
     ];
     const colors = [
         '#FFEB3B',
@@ -555,6 +569,5 @@
         drawWheel();
     });
 </script>
-
 </body>
 </html>

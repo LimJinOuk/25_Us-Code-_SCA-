@@ -5,40 +5,82 @@
     <title>카카오맵 여러 마커 표시 + 챗봇</title>
     <meta name="viewport" content="width=1200, initial-scale=1" />
     <style>
+        /* 스타일 생략 부분 포함 */
+        html,
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f6faf8;
             margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        header {
+            background: #fff;
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #3dbb78;
+        }
+        nav a {
+            margin-left: 1.2rem;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover {
+            color: #3dbb78;
         }
         .main-content {
             display: flex;
             width: 100vw;
             height: 100vh;
+            overflow: hidden; /* 스크롤 제거 */
         }
+
         .panel {
-            width: 50vw;
+            flex: 1; /* 좌우 동일 너비 */
             height: 100vh;
             box-sizing: border-box;
             display: flex;
             align-items: flex-start;
             justify-content: center;
             padding-top: 40px;
+            overflow: hidden; /* 내부 스크롤 방지 */
         }
         .left-panel #map {
-            width: 85%;
-            height: 90vh;
+            width: 90%; /* 85% → 100%로 변경 */
+            height: 85%;
             border-radius: 20px;
             border: 3px solid #3dbb78;
             background: #fff;
             box-shadow: 2px 0 24px rgba(0, 0, 0, 0.07);
         }
-        .right-panel {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+
+        .right-panel .chatbot-container {
+            width: 90%;
+            height: 85%;
         }
         .chatbot-container {
-            width: 95%;
+            width: 90%;
             height: 90vh;
             background: #fff;
             border-radius: 12px;
@@ -84,19 +126,14 @@
             flex-direction: row-reverse;
         }
         .message-content {
-            padding: 10px 15px;
-            border-radius: 18px;
-            line-height: 1.4;
-            word-break: break-word;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        .bot-message .message-content {
-            background: #fff;
-            color: #333;
-        }
-        .user-message .message-content {
-            background: #79a838;
-            color: #fff;
+            background: #ffe666;
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-size: 1.1em;
+            margin-bottom: 3px;
+            max-width: 60vw;
+            word-break: break-all;
         }
         .bot-icon,
         .user-icon {
@@ -144,22 +181,49 @@
             margin: 0;
             transition: background 0.1s;
         }
-        .mission-btn.accept { background: #b5e07c; }
-        .mission-btn.reject { background: #ff9f9f; }
-        .message-content {
-            background: #ffe666;
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 7px;
-            font-size: 1.1em;
-            margin-bottom: 3px;
-            max-width: 60vw;
-            word-break: break-all;
+        .mission-btn.accept {
+            background: #b5e07c;
+        }
+        .mission-btn.reject {
+            background: #ff9f9f;
+        }
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: #fff;
+            font-weight: bold;
+            backdrop-filter: blur(3px);
         }
     </style>
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c998b17c514d1d9ced4507de43d79ea9"></script>
 </head>
 <body>
+<header>
+    <div class="logo">
+        <img src="/jpg/raw111.png" alt="MYRO" />
+        <span class="brand">의성이</span>
+    </div>
+    <nav>
+        <th:block th:if="${session.loginUser == null}">
+            <a href="/login">로그인</a>
+            <a href="/register">회원가입</a>
+        </th:block>
+        <th:block th:if="${session.loginUser != null}">
+            <a href="/mypage">마이페이지</a>
+            <a href="/logout">로그아웃</a>
+        </th:block>
+    </nav>
+</header>
 <div class="main-content">
     <div class="panel left-panel">
         <div id="map"></div>
@@ -170,6 +234,7 @@
                 <h2>의성 Planner</h2>
                 <p>챗봇 🌱</p>
             </div>
+            <div id="mission-info-bar"></div>
             <div class="chatbot-messages" id="chatbot-messages">
                 <div class="message bot-message">
                     <span class="bot-icon">🤖</span>
@@ -209,8 +274,16 @@
             level: 10,
         });
         const markerColors = [
-            '#98dbc6', '#f18d9e', '#003366', '#89cff0', '#ffdab9',
-            '#ff6f61', '#fffacd', '#2e2e2e', '#556b2f', '#654321'
+            '#98dbc6',
+            '#f18d9e',
+            '#003366',
+            '#89cff0',
+            '#ffdab9',
+            '#ff6f61',
+            '#fffacd',
+            '#2e2e2e',
+            '#556b2f',
+            '#654321',
         ];
         const positions = [];
 
@@ -218,12 +291,18 @@
             const markerPosition = new kakao.maps.LatLng(latitude, longtitude);
             positions.push(markerPosition);
             const color = markerColors[idx % markerColors.length];
+            const svg = `<svg width='20' height='20' xmlns='http://www.w3.org/2000/svg'>
+                        <circle cx='10' cy='10' r='8' fill='${color}'/>
+                     </svg>`;
 
-            // SVG 마커 이미지
+            const encodedSvg = encodeURIComponent(svg);
+
             const markerImage = new kakao.maps.MarkerImage(
-                `data:image/svg+xml;utf-8,<svg width='20' height='20' xmlns='http://www.w3.org/2000/svg'><circle cx='10' cy='10' r='8' fill='${color}' stroke='white' stroke-width='2'/></svg>`,
+                `data:image/svg+xml;utf-8,${encodedSvg}`,
                 new kakao.maps.Size(20, 20),
-                { offset: new kakao.maps.Point(10, 10) }
+                {
+                    offset: new kakao.maps.Point(10, 10) // 중앙 정렬
+                }
             );
 
             new kakao.maps.Marker({
@@ -259,9 +338,25 @@
         const imageInput = document.getElementById('image-input');
         const uploadButton = document.getElementById('upload-button');
 
+        userInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            userInput.classList.add('dragover');
+        });
+        userInput.addEventListener('dragleave', () =>
+            userInput.classList.remove('dragover')
+        );
+        userInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            userInput.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files[0]?.type.startsWith('image/')) {
+                imageInput.files = files;
+                sendMessage();
+            } else alert('이미지 파일만 전송 가능합니다!');
+        });
+
         uploadButton.addEventListener('click', () => imageInput.click());
 
-        // 일반 메시지 함수
         function addMessage(text, sender) {
             const div = document.createElement('div');
             div.classList.add('message', `${sender}-message`);
@@ -280,85 +375,6 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // "미션" 메시지 함수 (체크/엑스 버튼 포함)
-        function addMissionMessage(text) {
-            const div = document.createElement('div');
-            div.classList.add('message', 'bot-message');
-            const icon = document.createElement('span');
-            icon.classList.add('bot-icon');
-            icon.textContent = '🤖';
-
-            // 1. 미션 텍스트
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            content.textContent = text.replace(/^✅ 퀘스트 추출 완료!\s*/, '');
-
-            // 2. 버튼 컨테이너
-            const actions = document.createElement('div');
-            actions.className = 'mission-actions';
-
-            // 체크 버튼
-            const btnAccept = document.createElement('button');
-            btnAccept.className = 'mission-btn accept';
-            btnAccept.title = '미션 수락';
-            btnAccept.textContent = '✔';
-            btnAccept.onclick = () => {
-                actions.innerHTML = `
-  <div style="
-    width:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:34px;
-  ">
-    <span style="color:#16af41; font-weight:bold; font-size:1.1em;">미션을 수락했습니다!</span>
-  </div>
-`;
-            };
-
-            // 엑스 버튼
-            const btnReject = document.createElement('button');
-            btnReject.className = 'mission-btn reject';
-            btnReject.title = '다시 요청';
-            btnReject.textContent = '❌';
-            btnReject.onclick = async () => {
-                actions.innerHTML = `
-      <div style="
-        width:100%;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        height:34px;
-      ">
-        <span style="color:#f00; font-weight:bold; font-size:1.1em;">새 미션 생성중...</span>
-      </div>
-    `;
-                // "새로운 미션" 요청(임의로 getBotResponse에 "새 미션" 전달)
-                const newMission = await getBotResponse('새 미션');
-                content.textContent = newMission.replace(/^✅ 퀘스트 추출 완료!\s*/, '');
-                actions.innerHTML = '';
-                actions.appendChild(btnAccept);
-                actions.appendChild(btnReject);
-            };
-
-            actions.appendChild(btnAccept);
-            actions.appendChild(btnReject);
-
-            div.appendChild(icon);
-            div.appendChild(content);
-            div.appendChild(actions);
-
-            messagesContainer.appendChild(div);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        // 미션인지 판단 (예시)
-        function isMission(text) {
-            // '퀘스트', '미션' 등 포함 여부로 판별 (원하면 조정)
-            return /퀘스트|미션/.test(text);
-        }
-
-        // 챗봇 응답 얻기
         async function getBotResponse(msg) {
             try {
                 const res = await fetch(
@@ -368,10 +384,17 @@
                         credentials: 'include',
                     }
                 );
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || '서버 오류');
+                }
+
                 const data = await res.json();
                 const entries = Object.entries(data.response)
                     .map(([loc, quest]) => `📍 ${loc}\n→ ${quest}`)
                     .join('\n\n');
+
                 return `✅ 퀘스트 추출 완료!\n\n${entries}`;
             } catch (err) {
                 console.error('Error:', err);
@@ -379,7 +402,6 @@
             }
         }
 
-        // 챗봇 전송
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text && imageInput.files.length === 0) return;
@@ -420,13 +442,7 @@
             }
 
             messagesContainer.removeChild(loading);
-
-            // 🟡 "미션"이면 버튼 있는 메시지로, 아니면 일반 메시지로
-            if (isMission(botReply)) {
-                addMissionMessage(botReply);
-            } else {
-                addMessage(botReply, 'bot');
-            }
+            addMessage(botReply, 'bot');
         }
 
         sendButton.addEventListener('click', sendMessage);

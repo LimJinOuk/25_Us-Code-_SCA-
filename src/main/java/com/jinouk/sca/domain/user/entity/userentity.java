@@ -19,7 +19,7 @@ public class userentity
     private String name;
 
     @Column
-    private String userid; //로그인시 사용
+    private String userid;
 
     @Column
     private String pw;

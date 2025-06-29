@@ -4,6 +4,8 @@ import com.jinouk.sca.domain.ai.service.extractAIService;
 import com.jinouk.sca.domain.ai.service.GeminiService;
 import com.jinouk.sca.domain.user.entity.userentity;
 
+import com.jinouk.sca.domain.user.service.creditservice;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/quest")
@@ -18,12 +21,14 @@ import java.util.Map;
 public class GeminiController {
 
     private final GeminiService geminiService;
+    private final creditservice creditservice;
 
-    // ✅ 이미지 + 키워드 기반 검증
+
     @PostMapping("/verify-quest")
     public ResponseEntity<?> verifyQuest(@RequestParam("image") MultipartFile image,
                                          @RequestParam(value = "keyword", required = false, defaultValue = "의성군청") String keyword,
-                                         HttpSession session) {
+                                         HttpSession session,
+                                         HttpServletRequest request) {
         Object userObj = session.getAttribute("loginUser");
 
         if (!(userObj instanceof userentity)) {
@@ -32,6 +37,10 @@ public class GeminiController {
 
         try {
             String result = geminiService.verifyQuestImage(image, keyword);
+            if (Objects.equals(result, "정말 잘 하셨네요! 정답이에요!")) {
+                creditservice.addCredit(request, 3000);
+            }
+            System.out.println("Gemini 결과: " + result);
             return ResponseEntity.ok(Map.of("response", result));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
